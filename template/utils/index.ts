@@ -41,7 +41,7 @@ export function tokenAmountToDecimal(tokenAmount: BigInt, exchangeDecimals: BigI
   if (ZERO_BI.equals(exchangeDecimals)) {
     return tokenAmount.toBigDecimal()
   }
-  return tokenAmount.toBigDecimal().div(exponentToBigDecimal(exchangeDecimals))
+  return safeDiv(tokenAmount.toBigDecimal(), exponentToBigDecimal(exchangeDecimals))
 }
 
 export function priceToDecimal(amount: BigDecimal, exchangeDecimals: BigInt): BigDecimal {
