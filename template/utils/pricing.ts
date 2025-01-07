@@ -22,7 +22,7 @@ let STABLE_COINS: string[] = '0x55d398326f99059ff775485246999027b3197955,0xe9e7c
 
 let MINIMUM_ETH_LOCKED = BigDecimal.fromString('10')
 
-let Q192 = 2 ** 192
+let Q192 = BigInt.fromI32(2).pow(192)  // Ensure safe calculation of 2^192 using BigInt
 export function sqrtPriceX96ToTokenPrices(sqrtPriceX96: BigInt, token0: Token, token1: Token): BigDecimal[] {
   let num = sqrtPriceX96.times(sqrtPriceX96).toBigDecimal()
   let denom = BigDecimal.fromString(Q192.toString())
