@@ -10,6 +10,9 @@
     "auth": "graph auth --product hosted-service SUBGRAPH_KEY",
     "codegen": "graph codegen subgraph.yaml",
     "build": "graph build subgraph.yaml",
+    "create-local": "graph create --node http://localhost:8020/ v3",
+    "remove-local": "graph remove --node http://localhost:8020/ v3",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 v3",
     "format": "biome format . --write",
     "lint": "biome check . --organize-imports-enabled=false",
     "lint:fix": "yarn run lint  --apply"
