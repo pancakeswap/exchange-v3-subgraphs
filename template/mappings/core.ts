@@ -12,7 +12,7 @@ import {
   CollectProtocol as CollectProtocolEvent,
 } from '../generated/templates/Pool/Pool'
 import { convertTokenToDecimal, loadTransaction } from '../utils'
-import { FACTORY_ADDRESS, ONE_BI, TWO_BD, ZERO_BD, ZERO_BI } from '../utils/constants'
+import { BundleID, FACTORY_ADDRESS, FACTORY_ADDRESS_BYTES, ONE_BI, TWO_BD, ZERO_BD, ZERO_BI } from '../utils/constants'
 import {
   AmountType,
   findEthPerToken,
@@ -34,8 +34,8 @@ import { getOrLoadToken } from '../utils/entity'
 
 export function handleInitialize(event: Initialize): void {
   // update pool sqrt price and tick
-  let pool = Pool.load(event.address.toHexString())
-  if (pool === null) {
+  let pool = Pool.load(event.address)
+  if (!pool) {
     return
   }
   pool.sqrtPrice = event.params.sqrtPriceX96
@@ -47,8 +47,8 @@ export function handleInitialize(event: Initialize): void {
   let token1 = getOrLoadToken(pool.token1)
 
   // update ETH price now that prices could have changed
-  let bundle = Bundle.load('1')
-  if (bundle === null) {
+  let bundle = Bundle.load(BundleID)
+  if (!bundle) {
     return
   }
   bundle.ethPriceUSD = getEthPriceInUSD()
@@ -65,17 +65,17 @@ export function handleInitialize(event: Initialize): void {
 }
 
 export function handleMint(event: MintEvent): void {
-  let bundle = Bundle.load('1')
+  let bundle = Bundle.load(BundleID)
   if (bundle === null) {
     return
   }
-  let poolAddress = event.address.toHexString()
+  let poolAddress = event.address
   let pool = Pool.load(poolAddress)
-  if (pool === null) {
+  if (!pool) {
     return
   }
-  let factory = Factory.load(FACTORY_ADDRESS)
-  if (factory === null) {
+  let factory = Factory.load(FACTORY_ADDRESS_BYTES)
+  if (!factory) {
     return
   }
 
@@ -124,7 +124,7 @@ export function handleMint(event: MintEvent): void {
   pool.liquidityProviderCount = pool.liquidityProviderCount.plus(ONE_BI)
 
   let transaction = loadTransaction(event)
-  let mint = new Mint(`${transaction.id.toString()}#${pool.txCount.toString()}`)
+  let mint = new Mint(transaction.id.concatI32(pool.txCount.toI32()))
   mint.transaction = transaction.id
   mint.timestamp = transaction.timestamp
   mint.pool = pool.id
@@ -145,17 +145,17 @@ export function handleMint(event: MintEvent): void {
   let lowerTickIdx = event.params.tickLower
   let upperTickIdx = event.params.tickUpper
 
-  let lowerTickId = `${poolAddress}#${BigInt.fromI32(event.params.tickLower).toString()}`
-  let upperTickId = `${poolAddress}#${BigInt.fromI32(event.params.tickUpper).toString()}`
+  let lowerTickId = poolAddress.concatI32(event.params.tickLower)
+  let upperTickId = poolAddress.concatI32(event.params.tickUpper)
 
   let lowerTick = Tick.load(lowerTickId)
   let upperTick = Tick.load(upperTickId)
 
-  if (lowerTick === null) {
+  if (!lowerTick) {
     lowerTick = createTick(lowerTickId, lowerTickIdx, pool.id, event)
   }
 
-  if (upperTick === null) {
+  if (!upperTick) {
     upperTick = createTick(upperTickId, upperTickIdx, pool.id, event)
   }
 
@@ -183,22 +183,22 @@ export function handleMint(event: MintEvent): void {
   mint.save()
 
   // Update inner tick vars and save the ticks
-  updateTickFeeVarsAndSave(lowerTick!, event)
-  updateTickFeeVarsAndSave(upperTick!, event)
+  updateTickFeeVarsAndSave(lowerTick, event)
+  updateTickFeeVarsAndSave(upperTick, event)
 }
 
 export function handleBurn(event: BurnEvent): void {
-  let bundle = Bundle.load('1')
-  if (bundle === null) {
+  let bundle = Bundle.load(BundleID)
+  if (!bundle) {
     return
   }
-  let poolAddress = event.address.toHexString()
+  let poolAddress = event.address
   let pool = Pool.load(poolAddress)
-  if (pool === null) {
+  if (!pool) {
     return
   }
-  let factory = Factory.load(FACTORY_ADDRESS)
-  if (factory === null) {
+  let factory = Factory.load(FACTORY_ADDRESS_BYTES)
+  if (!factory) {
     return
   }
 
@@ -246,7 +246,7 @@ export function handleBurn(event: BurnEvent): void {
 
   // burn entity
   let transaction = loadTransaction(event)
-  let burn = new Burn(`${transaction.id}#${pool.txCount.toString()}`)
+  let burn = new Burn(transaction.id.concatI32(pool.txCount.toI32()))
   burn.transaction = transaction.id
   burn.timestamp = transaction.timestamp
   burn.pool = pool.id
@@ -263,11 +263,11 @@ export function handleBurn(event: BurnEvent): void {
   burn.logIndex = event.logIndex
 
   // tick entities
-  let lowerTickId = `${poolAddress}#${BigInt.fromI32(event.params.tickLower).toString()}`
-  let upperTickId = `${poolAddress}#${BigInt.fromI32(event.params.tickUpper).toString()}`
+  let lowerTickId = poolAddress.concatI32(event.params.tickLower)
+  let upperTickId = poolAddress.concatI32(event.params.tickUpper)
   let lowerTick = Tick.load(lowerTickId)
   let upperTick = Tick.load(upperTickId)
-  if (lowerTick === null || upperTick === null) {
+  if (!lowerTick || !upperTick) {
     return
   }
   let amount = event.params.amount
@@ -283,8 +283,8 @@ export function handleBurn(event: BurnEvent): void {
   updateTokenDayData(bundle, token1 as Token, event)
   updateTokenHourData(bundle, token0 as Token, event)
   updateTokenHourData(bundle, token1 as Token, event)
-  updateTickFeeVarsAndSave(lowerTick!, event)
-  updateTickFeeVarsAndSave(upperTick!, event)
+  updateTickFeeVarsAndSave(lowerTick, event)
+  updateTickFeeVarsAndSave(upperTick, event)
 
   token0.save()
   token1.save()
@@ -294,16 +294,16 @@ export function handleBurn(event: BurnEvent): void {
 }
 
 export function handleSwap(event: SwapEvent): void {
-  let bundle = Bundle.load('1')
-  if (bundle === null) {
+  let bundle = Bundle.load(BundleID)
+  if (!bundle ) {
     return
   }
-  let factory = Factory.load(FACTORY_ADDRESS)
-  if (factory === null) {
+  let factory = Factory.load(FACTORY_ADDRESS_BYTES)
+  if (!factory) {
     return
   }
-  let pool = Pool.load(event.address.toHexString())
-  if (pool === null) {
+  let pool = Pool.load(event.address)
+  if (!pool) {
     return
   }
   // // hot fix for bad pricing
@@ -400,8 +400,8 @@ export function handleSwap(event: SwapEvent): void {
 
   // fix for bad pricing on wbtc-weth 18450862
   if (transaction.blockNumber.equals(BigInt.fromI32(18450862))) {
-    if (token0.id === '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599') {
-      log.warning('bad pricing id: {}, token0: {}', [transaction.id, token0.derivedETH.toString()])
+    if (token0.id.toHexString() === '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599') {
+      log.warning('bad pricing id: {}, token0: {}', [transaction.id.toHexString(), token0.derivedETH.toString()])
       token0.derivedETH = token0DerivedETH
     }
   }
@@ -427,7 +427,7 @@ export function handleSwap(event: SwapEvent): void {
   )
 
   // create Swap event
-  let swap = new Swap(`${transaction.id}#${pool.txCount.toString()}`)
+  let swap = new Swap(transaction.id.concatI32(pool.txCount.toI32()))
   swap.transaction = transaction.id
   swap.timestamp = transaction.timestamp
   swap.pool = pool.id
@@ -547,8 +547,8 @@ export function handleSwap(event: SwapEvent): void {
 
 export function handleFlash(event: FlashEvent): void {
   // update fee growth
-  let pool = Pool.load(event.address.toHexString())
-  if (pool === null) {
+  let pool = Pool.load(event.address)
+  if (!pool) {
     return
   }
   let poolContract = PoolABI.bind(event.address)
@@ -568,29 +568,29 @@ function updateTickFeeVarsAndSave(tick: Tick, event: ethereum.Event): void {
   tick.feeGrowthOutside1X128 = tickResult.value3
   tick.save()
 
-  updateTickDayData(tick!, event)
+  updateTickDayData(tick, event)
 }
 
 function loadTickUpdateFeeVarsAndSave(tickId: i32, event: ethereum.Event): void {
   let poolAddress = event.address
-  let tick = Tick.load(poolAddress.toHexString().concat('#').concat(tickId.toString()))
-  if (tick !== null) {
-    updateTickFeeVarsAndSave(tick!, event)
+  let tick = Tick.load(poolAddress.concatI32(tickId))
+  if (tick) {
+    updateTickFeeVarsAndSave(tick, event)
   }
 }
 
 export function handleCollect(event: CollectEvent): void {
   // update fee growth
-  let pool = Pool.load(event.address.toHexString())
-  if (pool === null) {
+  let pool = Pool.load(event.address)
+  if (!pool) {
     return
   }
-  let factory = Factory.load(FACTORY_ADDRESS)
-  if (factory === null) {
+  let factory = Factory.load(FACTORY_ADDRESS_BYTES)
+  if (!factory) {
     return
   }
-  let bundle = Bundle.load('1')
-  if (bundle === null) {
+  let bundle = Bundle.load(BundleID)
+  if (!bundle) {
     return
   }
 
@@ -631,7 +631,7 @@ export function handleCollect(event: CollectEvent): void {
   token1.txCount = token1.txCount.plus(ONE_BI)
   pool.txCount = pool.txCount.plus(ONE_BI)
 
-  let collectID = `${transaction.id.toString()}#${pool.txCount.toString()}`
+  let collectID = transaction.id.concatI32(pool.txCount.toI32())
   let collect = new Collect(collectID)
   collect.transaction = transaction.id
   collect.timestamp = event.block.timestamp
@@ -653,16 +653,16 @@ export function handleCollect(event: CollectEvent): void {
 
 export function handleCollectProtocol(event: CollectProtocolEvent): void {
   // update fee growth
-  let pool = Pool.load(event.address.toHexString())
-  if (pool === null) {
+  let pool = Pool.load(event.address)
+  if (!pool) {
     return
   }
-  let factory = Factory.load(FACTORY_ADDRESS)
-  if (factory === null) {
+  let factory = Factory.load(FACTORY_ADDRESS_BYTES)
+  if (!factory) {
     return
   }
-  let bundle = Bundle.load('1')
-  if (bundle === null) {
+  let bundle = Bundle.load(BundleID)
+  if (!bundle) {
     return
   }
   let token0 = getOrLoadToken(pool.token0)

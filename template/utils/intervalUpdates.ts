@@ -14,7 +14,7 @@ import {
   Tick,
 } from '../generated/schema'
 import { FACTORY_ADDRESS } from './constants'
-import { ethereum } from '@graphprotocol/graph-ts'
+import { Bytes, ethereum } from '@graphprotocol/graph-ts'
 
 /**
  * Tracks global aggregate data over daily windows
@@ -24,9 +24,9 @@ export function updatePancakeDayData(factory: Factory, event: ethereum.Event): P
   let timestamp = event.block.timestamp.toI32()
   let dayID = timestamp / 86400 // rounded
   let dayStartTimestamp = dayID * 86400
-  let pancakeDayData = PancakeDayData.load(dayID.toString())
-  if (pancakeDayData === null) {
-    pancakeDayData = new PancakeDayData(dayID.toString())
+  let pancakeDayData = PancakeDayData.load(Bytes.fromI32(dayID))
+  if (!pancakeDayData) {
+    pancakeDayData = new PancakeDayData(Bytes.fromI32(dayID))
     pancakeDayData.date = dayStartTimestamp
     pancakeDayData.volumeETH = ZERO_BD
     pancakeDayData.volumeUSD = ZERO_BD
@@ -44,9 +44,9 @@ export function updatePoolDayData(pool: Pool, event: ethereum.Event): PoolDayDat
   let timestamp = event.block.timestamp.toI32()
   let dayID = timestamp / 86400
   let dayStartTimestamp = dayID * 86400
-  let dayPoolID = event.address.toHexString().concat('-').concat(dayID.toString())
+  let dayPoolID = event.address.concatI32(dayID)
   let poolDayData = PoolDayData.load(dayPoolID)
-  if (poolDayData === null) {
+  if (!poolDayData) {
     poolDayData = new PoolDayData(dayPoolID)
     poolDayData.date = dayStartTimestamp
     poolDayData.pool = pool.id
@@ -91,9 +91,9 @@ export function updatePoolHourData(pool: Pool, event: ethereum.Event): PoolHourD
   let timestamp = event.block.timestamp.toI32()
   let hourIndex = timestamp / 3600 // get unique hour within unix history
   let hourStartUnix = hourIndex * 3600 // want the rounded effect
-  let hourPoolID = event.address.toHexString().concat('-').concat(hourIndex.toString())
+  let hourPoolID = event.address.concatI32(hourIndex)
   let poolHourData = PoolHourData.load(hourPoolID)
-  if (poolHourData === null) {
+  if (!poolHourData) {
     poolHourData = new PoolHourData(hourPoolID)
     poolHourData.periodStartUnix = hourStartUnix
     poolHourData.pool = pool.id
@@ -139,11 +139,11 @@ export function updateTokenDayData(bundle: Bundle, token: Token, event: ethereum
   let timestamp = event.block.timestamp.toI32()
   let dayID = timestamp / 86400
   let dayStartTimestamp = dayID * 86400
-  let tokenDayID = token.id.toString().concat('-').concat(dayID.toString())
+  let tokenDayID = token.id.concatI32(dayID)
   let tokenPrice = token.derivedETH.times(bundle.ethPriceUSD)
 
   let tokenDayData = TokenDayData.load(tokenDayID)
-  if (tokenDayData === null) {
+  if (!tokenDayData) {
     tokenDayData = new TokenDayData(tokenDayID)
     tokenDayData.date = dayStartTimestamp
     tokenDayData.token = token.id
@@ -179,11 +179,11 @@ export function updateTokenHourData(bundle: Bundle, token: Token, event: ethereu
   let timestamp = event.block.timestamp.toI32()
   let hourIndex = timestamp / 3600 // get unique hour within unix history
   let hourStartUnix = hourIndex * 3600 // want the rounded effect
-  let tokenHourID = token.id.toString().concat('-').concat(hourIndex.toString())
+  let tokenHourID = token.id.concatI32(hourIndex)
   let tokenHourData = TokenHourData.load(tokenHourID)
   let tokenPrice = token.derivedETH.times(bundle.ethPriceUSD)
 
-  if (tokenHourData === null) {
+  if (!tokenHourData) {
     tokenHourData = new TokenHourData(tokenHourID)
     tokenHourData.periodStartUnix = hourStartUnix
     tokenHourData.token = token.id
@@ -219,7 +219,7 @@ export function updateTickDayData(tick: Tick, event: ethereum.Event): TickDayDat
   let timestamp = event.block.timestamp.toI32()
   let dayID = timestamp / 86400
   let dayStartTimestamp = dayID * 86400
-  let tickDayDataID = tick.id.concat('-').concat(dayID.toString())
+  let tickDayDataID = tick.id.toHexString().concat('-').concat(dayID.toString())
   let tickDayData = TickDayData.load(tickDayDataID)
   if (tickDayData === null) {
     tickDayData = new TickDayData(tickDayDataID)
