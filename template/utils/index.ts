@@ -60,16 +60,16 @@ export function bigDecimalExp18(): BigDecimal {
 }
 
 export function convertTokenToDecimal(tokenAmount: BigInt, token: Token | null): BigDecimal {
-  if (token === null || ZERO_BI.equals(token.decimals)) {
+  if (!token || ZERO_BI.equals(token.decimals)) {
     return tokenAmount.toBigDecimal()
   }
   return safeDiv(tokenAmount.toBigDecimal(), exponentToBigDecimal(token.decimals))
 }
 
 export function loadTransaction(event: ethereum.Event): Transaction {
-  let transaction = Transaction.load(event.transaction.hash.toHexString())
-  if (transaction === null) {
-    transaction = new Transaction(event.transaction.hash.toHexString())
+  let transaction = Transaction.load(event.transaction.hash)
+  if (!transaction) {
+    transaction = new Transaction(event.transaction.hash)
   }
   transaction.blockNumber = event.block.number
   transaction.timestamp = event.block.timestamp
