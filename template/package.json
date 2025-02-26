@@ -17,11 +17,11 @@
     "lint:fix": "yarn run lint  --apply"
   },
   "dependencies": {
-    "@graphprotocol/graph-cli": "0.74.1",
-    "@graphprotocol/graph-ts": "0.35.1",
+    "@graphprotocol/graph-cli": "0.96.0",
+    "@graphprotocol/graph-ts": "0.38.0",
     "mustache": "^4.2.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.8.2"
+    "@biomejs/biome": "1.9.4"
   }
 }
