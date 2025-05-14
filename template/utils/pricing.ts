@@ -26,7 +26,9 @@ let Q192 = BigInt.fromI32(2).pow(192)  // Ensure safe calculation of 2^192 using
 export function sqrtPriceX96ToTokenPrices(sqrtPriceX96: BigInt, token0: Token, token1: Token): BigDecimal[] {
   let num = sqrtPriceX96.times(sqrtPriceX96).toBigDecimal()
   let denom = BigDecimal.fromString(Q192.toString())
-  let price1 = num.div(denom).times(exponentToBigDecimal(token0.decimals)).div(exponentToBigDecimal(token1.decimals))
+  let toBigDecimal0 = exponentToBigDecimal(token0.decimals)
+  let toBigDecimal1 = exponentToBigDecimal(token1.decimals)
+  let price1 = safeDiv(num.div(denom).times(toBigDecimal0),toBigDecimal1)
 
   let price0 = safeDiv(BigDecimal.fromString('1'), price1)
   return [price0, price1]
