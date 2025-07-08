@@ -34,7 +34,7 @@ export function updateDerivedTVLAmounts(
 
   // Get tracked and untracked amounts based on tokens in pool.
   let amounts: AmountType = getAdjustedAmounts(
-      bundle,
+    bundle,
     pool.totalValueLockedToken0,
     token0 as Token,
     pool.totalValueLockedToken1,

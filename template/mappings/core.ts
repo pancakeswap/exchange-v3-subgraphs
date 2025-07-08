@@ -295,7 +295,7 @@ export function handleBurn(event: BurnEvent): void {
 
 export function handleSwap(event: SwapEvent): void {
   let bundle = Bundle.load(BundleID)
-  if (!bundle ) {
+  if (!bundle) {
     return
   }
   let factory = Factory.load(FACTORY_ADDRESS_BYTES)
@@ -325,13 +325,13 @@ export function handleSwap(event: SwapEvent): void {
   // need absolute amounts for volume
   let amount0Abs = amount0.times(BigDecimal.fromString(amount0.lt(ZERO_BD) ? '-1' : '1'))
   let amount1Abs = amount1.times(BigDecimal.fromString(amount1.lt(ZERO_BD) ? '-1' : '1'))
-  let volumeAmounts: AmountType = getAdjustedAmounts(bundle,amount0Abs, token0 as Token, amount1Abs, token1 as Token)
+  let volumeAmounts: AmountType = getAdjustedAmounts(bundle, amount0Abs, token0 as Token, amount1Abs, token1 as Token)
   let volumeETH = volumeAmounts.eth.div(TWO_BD)
   let volumeUSD = volumeAmounts.usd.div(TWO_BD)
   let volumeUSDUntracked = volumeAmounts.usdUntracked.div(TWO_BD)
 
   let protocolFeeAmounts: AmountType = getAdjustedAmounts(
-      bundle,
+    bundle,
     protocolFeeAmount0,
     token0 as Token,
     protocolFeeAmount1,
@@ -602,7 +602,7 @@ export function handleCollect(event: CollectEvent): void {
   let amount0 = convertTokenToDecimal(event.params.amount0, token0)
   let amount1 = convertTokenToDecimal(event.params.amount1, token1)
   let amounts: AmountType = getAdjustedAmounts(
-      bundle,
+    bundle,
     // Used for USD in Collect event.
     amount0,
     token0 as Token,
