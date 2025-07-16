@@ -1,18 +1,18 @@
 import { WHITELIST_TOKENS } from './../utils/pricing'
 /* eslint-disable prefer-const */
-import { FACTORY_ADDRESS, ZERO_BI, ONE_BI, ZERO_BD, ADDRESS_ZERO } from './../utils/constants'
+import { ZERO_BI, ONE_BI, ZERO_BD, ADDRESS_ZERO, FACTORY_ADDRESS_BYTES } from './../utils/constants'
 import { Factory } from '../generated/schema'
 import { PoolCreated } from '../generated/Factory/Factory'
 import { Pool, Bundle } from '../generated/schema'
 import { Pool as PoolTemplate } from '../generated/templates'
-import { log, BigInt } from '@graphprotocol/graph-ts'
+import { log, BigInt, Bytes } from '@graphprotocol/graph-ts'
 import { getOrLoadToken } from '../utils/entity'
 
 export function handlePoolCreated(event: PoolCreated): void {
   // load factory
-  let factory = Factory.load(FACTORY_ADDRESS)
-  if (factory === null) {
-    factory = new Factory(FACTORY_ADDRESS)
+  let factory = Factory.load(FACTORY_ADDRESS_BYTES)
+  if (!factory) {
+    factory = new Factory(FACTORY_ADDRESS_BYTES)
     factory.poolCount = ZERO_BI
     factory.totalVolumeETH = ZERO_BD
     factory.totalVolumeUSD = ZERO_BD
@@ -29,24 +29,24 @@ export function handlePoolCreated(event: PoolCreated): void {
     factory.owner = ADDRESS_ZERO
 
     // create new bundle for tracking eth price
-    let bundle = new Bundle('1')
+    let bundle = new Bundle(Bytes.fromI32(1))
     bundle.ethPriceUSD = ZERO_BD
     bundle.save()
   }
 
   factory.poolCount = factory.poolCount.plus(ONE_BI)
 
-  let pool = new Pool(event.params.pool.toHexString()) as Pool
-  let token0 = getOrLoadToken(event.params.token0.toHexString())
-  let token1 = getOrLoadToken(event.params.token1.toHexString())
+  let pool = new Pool(event.params.pool) as Pool
+  let token0 = getOrLoadToken(event.params.token0)
+  let token1 = getOrLoadToken(event.params.token1)
 
   // update white listed pools
-  if (WHITELIST_TOKENS.includes(token0.id)) {
+  if (WHITELIST_TOKENS.includes(token0.id.toHexString())) {
     let newPools = token1.whitelistPools
     newPools.push(pool.id)
     token1.whitelistPools = newPools
   }
-  if (WHITELIST_TOKENS.includes(token1.id)) {
+  if (WHITELIST_TOKENS.includes(token1.id.toHexString())) {
     let newPools = token0.whitelistPools
     newPools.push(pool.id)
     token0.whitelistPools = newPools

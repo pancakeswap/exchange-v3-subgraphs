@@ -1,15 +1,15 @@
-import { Address, log } from '@graphprotocol/graph-ts'
+import { Address, Bytes, log } from '@graphprotocol/graph-ts'
 import { Token } from '../generated/schema'
 import { fetchTokenDecimals, fetchTokenName, fetchTokenSymbol, fetchTokenTotalSupply } from './token'
 import { ZERO_BD, ZERO_BI } from './constants'
 
-export function getOrLoadToken(address: string): Token {
-  let tokenAddress: Address = Address.fromString(address)
-  let token = Token.load(tokenAddress.toHexString())
+export function getOrLoadToken(address: Bytes): Token {
+  let tokenAddress = Address.fromBytes(address)
+  let token = Token.load(tokenAddress)
 
   // fetch info if null
-  if (token === null) {
-    token = new Token(tokenAddress.toHexString())
+  if (!token) {
+    token = new Token(tokenAddress)
     token.symbol = fetchTokenSymbol(tokenAddress)
     token.name = fetchTokenName(tokenAddress)
     token.totalSupply = fetchTokenTotalSupply(tokenAddress)
@@ -36,5 +36,5 @@ export function getOrLoadToken(address: string): Token {
     token.whitelistPools = []
   }
 
-  return token as Token
+  return token
 }
